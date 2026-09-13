@@ -1,32 +1,34 @@
 # 🔥 Algerian Forest Fire Weather Index (FWI) Predictor
 
 [![Python Application CI](https://github.com/Katakam-Krupavathi/Forest_Fire/actions/workflows/ci.yml/badge.svg)](https://github.com/Katakam-Krupavathi/Forest_Fire/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python Version](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Tests Passing](https://img.shields.io/badge/Tests-15%20Passed-success.svg)](tests/)
 
-A robust Machine Learning web application and API that predicts the **Forest Fire Weather Index (FWI)** using environmental and meteorological observations from the **Algerian Forest Fire Dataset**.
+An end-to-end Machine Learning web application and REST API that predicts the **Forest Fire Weather Index (FWI)** using meteorological observations from the **Algerian Forest Fire Dataset**.
 
 ---
 
 ## 🚀 Key Features
 
-- **Trained Machine Learning Model**: Ridge Regression pipeline with StandardScaler trained on the Algerian Forest Fire dataset.
-- **Flask Web Application**: Responsive interface built with Bootstrap 5 and Chart.js.
-- **Batch CSV Upload (`/batch`)**: Bulk prediction capability with instant tabular results and CSV export.
-- **Feature Explainability**: Interactive breakdown of feature contributions to understand positive and negative drivers of fire danger.
-- **REST API Endpoints (`POST /api/predict`, `GET /health`)**: High-performance JSON endpoints for programmatic integration.
-- **Session Prediction History**: Dynamic trend chart visualizing recent predictions during active sessions.
-- **Standardized Risk Classification**: Automatically categorizes predictions into standard Canadian Forest Fire danger bands.
-- **Containerized Deployment**: Ready for Docker & Docker Compose (`docker compose up --build`).
-- **Automated CI/CD**: Automated testing pipeline running 15 unit tests on GitHub Actions across Python 3.10, 3.11, and 3.12.
+- **Trained Machine Learning Model**: Ridge Regression pipeline with StandardScaler trained on curated meteorological data ($R^2 \approx 0.9843$, $\text{MAE} \approx 0.5642$).
+- **Flask Web Application**: Clean, responsive interface built with Bootstrap 5 and Chart.js.
+- **Batch CSV Upload (`/batch`)**: Bulk prediction page with tabular result previews, sample template download, and CSV export.
+- **Feature Explainability**: Visual bar breakdown illustrating how individual standardized features drive the FWI prediction higher or lower.
+- **JSON REST API (`POST /api/predict`, `GET /health`)**: Programmatic endpoints returning prediction results, danger ratings, and feature contributions.
+- **Session Prediction History**: Interactive Chart.js trend line tracking predictions across the current session.
+- **Standardized Fire Danger Classification**: Categorizes raw FWI numbers into Canadian Forest Fire Danger rating bands (*Low, Moderate, High, Very High, Extreme*).
+- **Containerized Deployment**: Pre-configured `Dockerfile` and `docker-compose.yml` for reproducible local or cloud execution.
+- **Automated CI/CD**: Automated GitHub Actions workflow testing on Python 3.10, 3.11, and 3.12 with 15 unit tests.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Core**: Python 3.10+
+- **Language**: Python 3.10+
 - **Machine Learning**: Scikit-Learn, NumPy, Pandas
 - **Web Framework**: Flask, Gunicorn
-- **Frontend & Visualization**: HTML5, CSS3, Bootstrap 5, Chart.js
+- **Frontend & Visualizations**: HTML5, CSS3, Bootstrap 5, Chart.js
 - **Containerization**: Docker, Docker Compose
 - **Testing & CI**: Pytest, GitHub Actions
 - **Deployment**: AWS Elastic Beanstalk / Render / Railway / Docker VPS
@@ -48,7 +50,7 @@ A robust Machine Learning web application and API that predicts the **Forest Fir
 | **Classes** | `Classes` | Fire occurrence status | `0` (Not Fire), `1` (Fire) |
 | **Region** | `Region` | Geographic study area | `0` (Bejaia), `1` (Sidi Bel-abbes) |
 
-### Fire Weather Index (FWI) Risk Bands
+### Fire Weather Index (FWI) Danger Bands
 | FWI Index Value | Danger Level | Badge Color | Description |
 | :--- | :--- | :--- | :--- |
 | **$< 5.2$** | `Low` | 🟢 Green | Fire potential is minimal |
@@ -188,13 +190,13 @@ Open your browser and navigate to `http://127.0.0.1:5000/`.
 ```bash
 docker compose up --build
 ```
-The app will be running at `http://localhost:5000`.
+The app will be accessible at `http://localhost:5000`.
 
 ---
 
-## 🌐 API Usage
+## 🌐 API Documentation
 
-### 1. Health Check
+### 1. Health Check (`GET /health`)
 ```bash
 curl -X GET http://127.0.0.1:5000/health
 ```
@@ -260,15 +262,8 @@ option_settings:
         WSGIPath: app:app
 ```
 
-### 2. Render / Railway / Production WSGI
-To deploy on PaaS providers like Render or Railway, configure the start command:
+### 2. Production WSGI (Render / Railway / VPS)
+To deploy on PaaS providers, configure the start command:
 ```bash
 gunicorn app:app --bind 0.0.0.0:$PORT
 ```
-
----
-
-## 👨‍💻 Author
-
-**Katakam Krupavathi**  
-- GitHub: [@Katakam-Krupavathi](https://github.com/Katakam-Krupavathi)
