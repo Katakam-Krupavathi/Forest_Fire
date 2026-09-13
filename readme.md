@@ -70,9 +70,14 @@ pip install -r requirements.txt
 pytest tests/
 ```
 
-### 4. Start the Application
+### 4. Retrain Model (Optional)
 ```bash
-python application.py
+python train_model.py
+```
+
+### 5. Start the Application
+```bash
+python app.py
 ```
 Open your browser and navigate to `http://127.0.0.1:5000/`.
 
@@ -122,14 +127,19 @@ curl -X POST http://127.0.0.1:5000/predict \
 
 ## ☁️ Deployment
 
-The project is structured for **AWS Elastic Beanstalk**:
-- `application.py` exposes `application` as the WSGI callable.
-- `.ebextensions/python.config` configures the WSGI path:
-  ```yaml
-  option_settings:
-      "aws:elasticbeanstalk:container:python":
-          WSGIPath : application:application
-  ```
+### 1. AWS Elastic Beanstalk
+The repository includes `.ebextensions/python.config` configured for WSGI deployment:
+```yaml
+option_settings:
+    "aws:elasticbeanstalk:container:python":
+        WSGIPath: app:app
+```
+
+### 2. Render / Railway / Production WSGI
+To deploy on PaaS providers like Render or Railway, configure the start command:
+```bash
+gunicorn app:app --bind 0.0.0.0:$PORT
+```
 
 ---
 
