@@ -9,13 +9,15 @@ A robust Machine Learning web application and API that predicts the **Forest Fir
 
 ## 🚀 Key Features
 
-- **Trained Machine Learning Model**: Uses Ridge Regression with a Standard Scaler pipeline trained on curated meteorological data.
-- **Flask Web Application**: User-friendly, responsive interface built with Bootstrap 5.
-- **REST API & Form Support**: Supports both HTML form submissions and JSON API endpoints (`/predict` & `/health`).
-- **Comprehensive Input Validation**: Robust range and type checking with user-friendly error alerts.
-- **Risk Level Categorization**: Dynamically classifies the predicted FWI into risk categories (*Low, Moderate, High, Extreme*).
-- **Automated CI/CD**: Automated unit test suite run via GitHub Actions on every push/PR.
-- **AWS Elastic Beanstalk Ready**: Pre-configured WSGI deployment via `.ebextensions/python.config`.
+- **Trained Machine Learning Model**: Ridge Regression pipeline with StandardScaler trained on the Algerian Forest Fire dataset.
+- **Flask Web Application**: Responsive interface built with Bootstrap 5 and Chart.js.
+- **Batch CSV Upload (`/batch`)**: Bulk prediction capability with instant tabular results and CSV export.
+- **Feature Explainability**: Interactive breakdown of feature contributions to understand positive and negative drivers of fire danger.
+- **REST API Endpoints (`POST /api/predict`, `GET /health`)**: High-performance JSON endpoints for programmatic integration.
+- **Session Prediction History**: Dynamic trend chart visualizing recent predictions during active sessions.
+- **Standardized Risk Classification**: Automatically categorizes predictions into standard Canadian Forest Fire danger bands.
+- **Containerized Deployment**: Ready for Docker & Docker Compose (`docker compose up --build`).
+- **Automated CI/CD**: Automated testing pipeline running 15 unit tests on GitHub Actions across Python 3.10, 3.11, and 3.12.
 
 ---
 
@@ -24,14 +26,16 @@ A robust Machine Learning web application and API that predicts the **Forest Fir
 - **Core**: Python 3.10+
 - **Machine Learning**: Scikit-Learn, NumPy, Pandas
 - **Web Framework**: Flask, Gunicorn
-- **Frontend**: HTML5, CSS3, Bootstrap 5
+- **Frontend & Visualization**: HTML5, CSS3, Bootstrap 5, Chart.js
+- **Containerization**: Docker, Docker Compose
 - **Testing & CI**: Pytest, GitHub Actions
-- **Deployment**: AWS Elastic Beanstalk / WSGI
+- **Deployment**: AWS Elastic Beanstalk / Render / Railway / Docker VPS
 
 ---
 
-## 📊 Feature Parameters
+## 📊 Feature Parameters & Risk Levels
 
+### Input Parameters
 | Parameter | Name | Description | Valid Range |
 | :--- | :--- | :--- | :--- |
 | **Temperature** | `Temperature` | Ambient temperature in Celsius | -10°C to 60°C |
@@ -43,6 +47,15 @@ A robust Machine Learning web application and API that predicts the **Forest Fir
 | **ISI** | `ISI` | Initial Spread Index | $\ge 0$ |
 | **Classes** | `Classes` | Fire occurrence status | `0` (Not Fire), `1` (Fire) |
 | **Region** | `Region` | Geographic study area | `0` (Bejaia), `1` (Sidi Bel-abbes) |
+
+### Fire Weather Index (FWI) Risk Bands
+| FWI Index Value | Danger Level | Badge Color | Description |
+| :--- | :--- | :--- | :--- |
+| **$< 5.2$** | `Low` | 🟢 Green | Fire potential is minimal |
+| **$5.2 - 11.2$** | `Moderate` | 🔵 Blue | Controlled fires possible |
+| **$11.2 - 21.3$** | `High` | 🟡 Yellow | Wildfires spread readily |
+| **$21.3 - 38.0$** | `Very High` | 🔴 Red | Fast spreading, difficult to suppress |
+| **$\ge 38.0$** | `Extreme` | ⚫ Dark | Severe, highly explosive fire risk |
 
 ---
 
@@ -73,6 +86,7 @@ flowchart TD
     subgraph Views [Jinja2 Templates / Responses]
         IndexView[index.html - Welcome Page]
         FormView[home.html - Prediction Form & Results]
+        BatchView[batch.html - CSV Batch Prediction]
         JSONResp[JSON API Response]
     end
 
@@ -80,11 +94,14 @@ flowchart TD
     Router -->|Render| IndexView
 
     UI -->|GET /predict| Router
-    Router -->|Render Empty Form| FormView
+    Router -->|Render Single Form| FormView
 
-    UI -->|POST /predict + 9 Features| Router
+    UI -->|GET /batch| Router
+    Router -->|Render Batch Form| BatchView
+
+    UI -->|POST /api/predict| Router
     Router --> Val
-    Val -->|Validation Error| FormView
+    Val -->|Validation Error| JSONResp
     Val -->|Validated Data| Transform
 
     ScalerFile -.->|Load on Startup| Transform
@@ -92,8 +109,8 @@ flowchart TD
 
     Transform -->|Standardized Vector| Predictor
     Predictor -->|Raw FWI Value| RiskCalc
-    RiskCalc -->|HTML Request| FormView
-    RiskCalc -->|JSON Request| JSONResp
+    RiskCalc -->|HTML Response| FormView
+    RiskCalc -->|JSON Response| JSONResp
 ```
 
 ### 2. Machine Learning Training Pipeline
@@ -154,7 +171,7 @@ pytest tests/
 
 ### 4. Retrain Model (Optional)
 ```bash
-python train_model.py
+python scripts/train.py
 ```
 
 ### 5. Start the Application
@@ -165,9 +182,19 @@ Open your browser and navigate to `http://127.0.0.1:5000/`.
 
 ---
 
+## 🐳 Docker Deployment
+
+### Run with Docker Compose
+```bash
+docker compose up --build
+```
+The app will be running at `http://localhost:5000`.
+
+---
+
 ## 🌐 API Usage
 
-### Health Check
+### 1. Health Check
 ```bash
 curl -X GET http://127.0.0.1:5000/health
 ```
@@ -179,9 +206,9 @@ curl -X GET http://127.0.0.1:5000/health
 }
 ```
 
-### Predict FWI (JSON Endpoint)
+### 2. Predict FWI (`POST /api/predict`)
 ```bash
-curl -X POST http://127.0.0.1:5000/predict \
+curl -X POST http://127.0.0.1:5000/api/predict \
   -H "Content-Type: application/json" \
   -d '{
     "Temperature": 32.0,
@@ -200,14 +227,30 @@ curl -X POST http://127.0.0.1:5000/predict \
 {
   "status": "success",
   "fwi": 11.24,
-  "risk_level": "Moderate",
-  "inputs": { ... }
+  "risk_level": "High",
+  "risk_class": "warning",
+  "inputs": {
+    "Temperature": 32.0,
+    "RH": 55.0,
+    "Ws": 16.0,
+    "Rain": 0.0,
+    "FFMC": 88.5,
+    "DMC": 18.2,
+    "ISI": 6.8,
+    "Classes": 1,
+    "Region": 0
+  },
+  "feature_contributions": [
+    { "feature": "FFMC", "weight": 4.12, "contribution": 3.84, "impact": "Increases Risk" },
+    { "feature": "ISI", "weight": 2.95, "contribution": 2.11, "impact": "Increases Risk" },
+    { "feature": "RH", "weight": -1.82, "contribution": -1.45, "impact": "Decreases Risk" }
+  ]
 }
 ```
 
 ---
 
-## ☁️ Deployment
+## ☁️ Cloud Deployment
 
 ### 1. AWS Elastic Beanstalk
 The repository includes `.ebextensions/python.config` configured for WSGI deployment:
