@@ -1,8 +1,13 @@
 __pycache__/
 *.py[cod]
-*.class
-.pytest_cache/
-venv/
+*$py.class
+*.so
 .env
-.DS_Store
+.venv
+venv/
+ENV/
+.ipynb_checkpoints/
+.pytest_cache/
 *.log
+.DS_Store
+dataset.csv
