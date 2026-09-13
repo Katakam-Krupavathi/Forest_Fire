@@ -48,24 +48,83 @@ A robust Machine Learning web application and API that predicts the **Forest Fir
 
 ## 🏗️ Architecture & ML Pipeline
 
-For the in-depth architectural breakdown, refer to [**docs/ARCHITECTURE.md**](docs/ARCHITECTURE.md).
+### 1. Request Flow Architecture
+The web application is powered by a Flask backend (`app.py`) that serves both user-facing HTML templates and REST API endpoints. Serialized models and scalers are loaded into memory once upon startup for high-performance, low-latency inference.
 
-### Request Flow
 ```mermaid
 flowchart TD
-    User([User Client]) -->|GET /| Welcome[Welcome Page index.html]
-    User -->|GET /predict| Form[Prediction Form home.html]
-    User -->|POST /predict| Flask[Flask Backend app.py]
-    Flask -->|Validate Inputs| Validated{Valid Data?}
-    Validated -->|No: Error 400| Form
-    Validated -->|Yes| Scaler[StandardScaler scaler.pkl]
-    Scaler --> Ridge[Ridge Regression ridge.pkl]
-    Ridge --> Risk[Risk Level Classifier]
-    Risk -->|Render Result| Form
+    subgraph Client [User Client / Browser]
+        UI[Web Browser / REST Client]
+    end
+
+    subgraph Server [Flask Application - app.py]
+        Router{Route Handler}
+        Val[Input Validator & Range Checker]
+        Transform[StandardScaler Pipeline]
+        Predictor[Ridge Regression Inference]
+        RiskCalc[FWI Risk Level Classifier]
+    end
+
+    subgraph Storage [Serialized Artifacts]
+        ScalerFile[(models/scaler.pkl)]
+        ModelFile[(models/ridge.pkl)]
+    end
+
+    subgraph Views [Jinja2 Templates / Responses]
+        IndexView[index.html - Welcome Page]
+        FormView[home.html - Prediction Form & Results]
+        JSONResp[JSON API Response]
+    end
+
+    UI -->|GET /| Router
+    Router -->|Render| IndexView
+
+    UI -->|GET /predict| Router
+    Router -->|Render Empty Form| FormView
+
+    UI -->|POST /predict + 9 Features| Router
+    Router --> Val
+    Val -->|Validation Error| FormView
+    Val -->|Validated Data| Transform
+
+    ScalerFile -.->|Load on Startup| Transform
+    ModelFile -.->|Load on Startup| Predictor
+
+    Transform -->|Standardized Vector| Predictor
+    Predictor -->|Raw FWI Value| RiskCalc
+    RiskCalc -->|HTML Request| FormView
+    RiskCalc -->|JSON Request| JSONResp
 ```
 
-### Why Ridge Regression?
-Across baseline Linear Regression, Lasso, and ElasticNet models tested on the Algerian Forest Fire dataset, **Ridge Regression ($L_2$ Regularization)** achieved superior performance ($R^2 \approx 0.9843$, $\text{MAE} \approx 0.5642$). The $L_2$ penalty effectively manages multicollinearity across weather indices without artificially zeroing out subtle continuous meteorological features (unlike Lasso).
+### 2. Machine Learning Training Pipeline
+The offline training workflow cleans raw meteorological observations, merges regional records, reduces multicollinearity, scales continuous features, and tests multiple regularized regression algorithms:
+
+```mermaid
+flowchart TD
+    A[Algerian Forest Fire Raw Dataset - CSV] --> B[Data Cleaning & Header Standardization]
+    B --> C[Region Labeling: Bejaia=0, Sidi Bel-abbes=1]
+    C --> D[Exploratory Data Analysis & Correlation Heatmap]
+    
+    D --> E[Multicollinearity Reduction: Drop BUI & DC correlation > 0.85]
+    E --> F[Selected 9 Features: Temperature, RH, Ws, Rain, FFMC, DMC, ISI, Classes, Region]
+    
+    F --> G[Train / Test Split - 75% Train / 25% Test, random_state=42]
+    G --> H[StandardScaler - Fit on Train, Transform Test]
+    
+    H --> I[Model Exploration: Linear, Lasso, Ridge, ElasticNet]
+    I --> J[Evaluate Metrics: R2 Score, MAE, RMSE]
+    J --> K[Model Selection: Ridge Regression selected for top R2 ~ 0.984 & lowest MAE]
+    
+    K --> L[Serialize: models/scaler.pkl & models/ridge.pkl]
+    L --> M[Production Ingestion: Loaded by Flask at Startup]
+```
+
+### 3. Why Ridge Regression?
+During model exploration across candidate algorithms (Ordinary Least Squares Linear Regression, Lasso, Ridge, and ElasticNet), **Ridge Regression ($L_2$ Regularization)** was selected for several key reasons:
+
+1. **Multicollinearity Management**: Meteorological indicators (FFMC, DMC, and ISI) have strong mutual correlation. Ordinary Least Squares is prone to inflated parameter variance when collinearity is present.
+2. **Smooth Coefficient Shrinkage vs. Feature Elimination**: While Lasso ($L_1$ Regularization) forces coefficients strictly to zero, continuous meteorological variations (relative humidity, wind speed, moisture codes) all provide valuable predictive signals. Discarding features led to higher prediction error.
+3. **Generalization Performance**: Ridge regression applies quadratic shrinkage on model weights ($\|\beta\|_2^2$), penalizing large coefficients without removing informative features. It achieved the highest test determination score ($R^2 \approx 0.9843$) and lowest Mean Absolute Error ($\text{MAE} \approx 0.5642$) on unseen validation data.
 
 ---
 
