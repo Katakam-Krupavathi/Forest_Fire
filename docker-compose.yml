@@ -1,0 +1,10 @@
+﻿services:
+  web:
+    build: .
+    container_name: forest_fire_app
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - FLASK_DEBUG=False
+    restart: unless-stopped
