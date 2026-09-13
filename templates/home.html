@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,19 +6,20 @@
     <title>Forest Fire Weather Index (FWI) Predictor</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #1f1c2c 0%, #928dab 100%);
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding-bottom: 50px;
+            padding-bottom: 60px;
         }
         .main-card {
             background-color: #ffffff;
             border-radius: 16px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
             padding: 35px;
-            margin-top: 40px;
+            margin-top: 20px;
         }
         .header-title {
             color: #c0392b;
@@ -51,9 +52,16 @@
         }
         .result-card {
             border-radius: 12px;
-            padding: 20px;
+            padding: 25px;
             margin-top: 25px;
             animation: fadeIn 0.5s ease-in-out;
+        }
+        .chart-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -63,19 +71,33 @@
 </head>
 <body>
 
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark bg-opacity-75 mb-3">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-warning" href="/"><i class="bi bi-fire me-2"></i>FWI Predictor</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/predict">Single Predict</a></li>
+                <li class="nav-item"><a class="nav-link" href="/batch">Batch CSV</a></li>
+                <li class="nav-item"><a class="nav-link" href="https://github.com/Katakam-Krupavathi/Forest_Fire" target="_blank"><i class="bi bi-github"></i> GitHub</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-lg-8 col-md-10">
+        <div class="col-lg-9 col-md-11">
             <div class="main-card">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <a href="/" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Home</a>
-                    <span class="badge bg-danger-subtle text-danger px-3 py-2 fs-6">Ridge Regression Model</span>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="header-title mb-0"><i class="bi bi-fire me-2"></i>Forest Fire Index Predictor</h2>
+                    <span class="badge bg-danger-subtle text-danger px-3 py-2 fs-6">Ridge Model</span>
                 </div>
-
-                <div class="text-center mb-4">
-                    <h2 class="header-title">🔥 Forest Fire Index Predictor</h2>
-                    <p class="text-muted">Enter meteorological observations from the Algerian Forest Fire Dataset to predict the Fire Weather Index (FWI).</p>
-                </div>
+                <p class="text-muted">Enter meteorological inputs from the Algerian Forest Fire Dataset to predict the Fire Weather Index (FWI).</p>
 
                 {% if error %}
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -86,22 +108,31 @@
 
                 {% if results is defined %}
                 <div class="result-card bg-light border border-{{ risk_class if risk_class else 'primary' }} text-center">
-                    <h5 class="text-muted mb-2">Prediction Result</h5>
-                    <div class="display-5 fw-bold text-{{ risk_class if risk_class else 'dark' }} mb-2">
+                    <h5 class="text-muted mb-2">Prediction Output</h5>
+                    <div class="display-4 fw-bold text-{{ risk_class if risk_class else 'dark' }} mb-2">
                         FWI: {{ results }}
                     </div>
                     {% if risk_level %}
-                    <div>
-                        <span class="badge bg-{{ risk_class }} fs-6 px-3 py-2">
-                            Fire Risk Level: {{ risk_level }}
+                    <div class="mb-3">
+                        <span class="badge bg-{{ risk_class }} fs-5 px-4 py-2">
+                            Fire Danger: {{ risk_level }}
                         </span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Explainability Feature Breakdown Chart -->
+                    {% if contributions %}
+                    <div class="chart-box text-start">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-bar-chart-steps me-2"></i>Feature Contribution Breakdown (Explainability)</h6>
+                        <p class="small text-muted mb-3">Shows how each standardized feature positively or negatively shifts the Fire Weather Index prediction.</p>
+                        <canvas id="contribChart" height="110"></canvas>
                     </div>
                     {% endif %}
                 </div>
                 <hr class="my-4">
                 {% endif %}
 
-                <form method="POST" action="/predict">
+                <form method="POST" action="/predict" id="predictForm">
                     <div class="row g-3">
                         <!-- Temperature -->
                         <div class="col-md-4">
@@ -186,11 +217,94 @@
                         </button>
                     </div>
                 </form>
+
+                <!-- Session History Chart -->
+                <div class="chart-box mt-4" id="historyBox" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-graph-up me-2"></i>Recent Prediction History (Session Trend)</h6>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearHistory()">Clear History</button>
+                    </div>
+                    <canvas id="historyChart" height="90"></canvas>
+                </div>
+
             </div>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Explainability Chart Rendering
+    {% if contributions %}
+    const contribData = {{ contributions|tojson }};
+    const ctx = document.getElementById('contribChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: contribData.map(c => c.feature),
+            datasets: [{
+                label: 'Contribution to FWI',
+                data: contribData.map(c => c.contribution),
+                backgroundColor: contribData.map(c => c.contribution >= 0 ? '#e74c3c' : '#2ecc71'),
+                borderRadius: 4
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Weighted Contribution (+ Increases Risk / - Decreases Risk)' } }
+            }
+        }
+    });
+
+    // Save result to session history
+    const currentFwi = {{ results }};
+    let history = JSON.parse(localStorage.getItem('fwi_history') || '[]');
+    history.push({ time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}), fwi: currentFwi });
+    if (history.length > 10) history.shift();
+    localStorage.setItem('fwi_history', JSON.stringify(history));
+    {% endif %}
+
+    // Render session history trend
+    function renderHistory() {
+        const history = JSON.parse(localStorage.getItem('fwi_history') || '[]');
+        if (history.length > 0) {
+            document.getElementById('historyBox').style.display = 'block';
+            const hCtx = document.getElementById('historyChart').getContext('2d');
+            new Chart(hCtx, {
+                type: 'line',
+                data: {
+                    labels: history.map(h => h.time),
+                    datasets: [{
+                        label: 'FWI Index',
+                        data: history.map(h => h.fwi),
+                        borderColor: '#e67e22',
+                        backgroundColor: 'rgba(230, 126, 34, 0.15)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Predicted FWI' } }
+                    }
+                }
+            });
+        }
+    }
+    renderHistory();
+
+    function clearHistory() {
+        localStorage.removeItem('fwi_history');
+        document.getElementById('historyBox').style.display = 'none';
+    }
+</script>
 </body>
 </html>

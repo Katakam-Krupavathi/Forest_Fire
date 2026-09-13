@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12,10 +12,7 @@
             color: #ffffff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px 0;
+            padding-bottom: 50px;
         }
         .hero-card {
             background: rgba(255, 255, 255, 0.08);
@@ -23,9 +20,10 @@
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 20px;
             padding: 50px 40px;
-            max-width: 750px;
+            max-width: 800px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
             text-align: center;
+            margin: 40px auto 0 auto;
         }
         .hero-title {
             font-size: 2.5rem;
@@ -49,14 +47,13 @@
             border: none;
             color: white;
             font-weight: 700;
-            font-size: 1.2rem;
-            padding: 14px 40px;
+            font-size: 1.1rem;
+            padding: 12px 30px;
             border-radius: 50px;
             transition: all 0.3s ease;
             box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
             text-decoration: none;
             display: inline-block;
-            margin-top: 30px;
         }
         .btn-start:hover {
             background: linear-gradient(45deg, #ff5252, #ff7043);
@@ -68,28 +65,50 @@
 </head>
 <body>
 
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark bg-opacity-50">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-warning" href="/"><i class="bi bi-fire me-2"></i>FWI Predictor</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link active" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/predict">Single Predict</a></li>
+                <li class="nav-item"><a class="nav-link" href="/batch">Batch CSV</a></li>
+                <li class="nav-item"><a class="nav-link" href="https://github.com/Katakam-Krupavathi/Forest_Fire" target="_blank"><i class="bi bi-github"></i> GitHub</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-lg-8 col-md-10">
+        <div class="col-lg-9">
             <div class="hero-card">
                 <div class="mb-3">
                     <span class="fs-1">🌲 🔥</span>
                 </div>
                 <h1 class="hero-title">Algerian Forest Fire Predictor</h1>
                 <p class="lead text-light mb-4">
-                    An intelligent Machine Learning web system built on the Algerian Forest Fire dataset. Accurately predict the <strong>Fire Weather Index (FWI)</strong> using environmental and meteorological features.
+                    An intelligent Machine Learning web system built on the Algerian Forest Fire dataset. Accurately predict the <strong>Fire Weather Index (FWI)</strong> and fire risk severity using environmental & meteorological features.
                 </p>
 
                 <div class="mb-4">
                     <span class="feature-badge"><i class="bi bi-thermometer-sun me-1"></i> Meteorological Indices</span>
                     <span class="feature-badge"><i class="bi bi-graph-up-arrow me-1"></i> Ridge Regression Model</span>
-                    <span class="feature-badge"><i class="bi bi-shield-check me-1"></i> Validated Inputs</span>
-                    <span class="feature-badge"><i class="bi bi-cloud-check me-1"></i> REST API & UI Ready</span>
+                    <span class="feature-badge"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Bulk Batch CSV Upload</span>
+                    <span class="feature-badge"><i class="bi bi-bar-chart-steps me-1"></i> Feature Explainability</span>
+                    <span class="feature-badge"><i class="bi bi-code-slash me-1"></i> JSON REST API</span>
                 </div>
 
-                <div>
+                <div class="d-flex justify-content-center gap-3 mt-4">
                     <a href="/predict" class="btn btn-start">
-                        <i class="bi bi-fire me-2"></i> Launch Predictor
+                        <i class="bi bi-fire me-2"></i> Single Prediction
+                    </a>
+                    <a href="/batch" class="btn btn-outline-light px-4 py-2 rounded-pill fw-bold">
+                        <i class="bi bi-file-earmark-spreadsheet me-2"></i> Batch CSV Upload
                     </a>
                 </div>
             </div>
