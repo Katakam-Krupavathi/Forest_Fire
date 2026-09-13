@@ -46,6 +46,29 @@ A robust Machine Learning web application and API that predicts the **Forest Fir
 
 ---
 
+## 🏗️ Architecture & ML Pipeline
+
+For the in-depth architectural breakdown, refer to [**docs/ARCHITECTURE.md**](docs/ARCHITECTURE.md).
+
+### Request Flow
+```mermaid
+flowchart TD
+    User([User Client]) -->|GET /| Welcome[Welcome Page index.html]
+    User -->|GET /predict| Form[Prediction Form home.html]
+    User -->|POST /predict| Flask[Flask Backend app.py]
+    Flask -->|Validate Inputs| Validated{Valid Data?}
+    Validated -->|No: Error 400| Form
+    Validated -->|Yes| Scaler[StandardScaler scaler.pkl]
+    Scaler --> Ridge[Ridge Regression ridge.pkl]
+    Ridge --> Risk[Risk Level Classifier]
+    Risk -->|Render Result| Form
+```
+
+### Why Ridge Regression?
+Across baseline Linear Regression, Lasso, and ElasticNet models tested on the Algerian Forest Fire dataset, **Ridge Regression ($L_2$ Regularization)** achieved superior performance ($R^2 \approx 0.9843$, $\text{MAE} \approx 0.5642$). The $L_2$ penalty effectively manages multicollinearity across weather indices without artificially zeroing out subtle continuous meteorological features (unlike Lasso).
+
+---
+
 ## 📂 Run Locally
 
 ### 1. Clone the Repository
